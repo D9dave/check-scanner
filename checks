@@ -1,0 +1,45 @@
+import streamlit as st
+import pytesseract
+import cv2
+import numpy as np
+import re
+from PIL import Image
+
+st.title("🧾 Check Scanner Total Tool")
+
+uploaded_files = st.file_uploader(
+    "Upload check images",
+    type=["png", "jpg", "jpeg"],
+    accept_multiple_files=True
+)
+
+def extract_amount(text):
+    matches = re.findall(r'\d+\.\d{2}', text)
+    return [float(m) for m in matches]
+
+if uploaded_files:
+    total = 0
+    results = []
+
+    for file in uploaded_files:
+        image = Image.open(file)
+        img = np.array(image)
+
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        text = pytesseract.image_to_string(gray)
+
+        amounts = extract_amount(text)
+
+        if amounts:
+            amount = max(amounts)
+            total += amount
+            results.append((file.name, amount))
+        else:
+            results.append((file.name, "Not Found"))
+
+    st.subheader("Results")
+
+    for name, amount in results:
+        st.write(f"{name}: {amount}")
+
+    st.subheader(f"💰 TOTAL: ${total:.2f}")
